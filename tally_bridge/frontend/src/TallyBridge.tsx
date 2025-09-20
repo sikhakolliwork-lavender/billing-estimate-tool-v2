@@ -49,27 +49,49 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       min-height: 100vh;
     }
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(10px);
-      padding: 25px;
+      padding: 20px;
       border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.1);
       border: 1px solid rgba(255,255,255,0.2);
     }
-    .main-layout {
+    .top-stats-bar {
       display: grid;
-      grid-template-columns: 1fr 300px;
-      gap: 25px;
-      align-items: start;
+      grid-template-columns: 1fr 1fr auto auto;
+      gap: 20px;
+      align-items: center;
+      padding: 15px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      margin-bottom: 20px;
+      color: white;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
-    .invoice-form {
-      min-height: 400px;
+    .stats-section {
+      display: flex;
+      align-items: center;
+      gap: 15px;
     }
-    .sidebar {
-      position: sticky;
-      top: 20px;
+    .stat-item {
+      text-align: center;
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 500;
+      opacity: 0.8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .main-content {
+      width: 100%;
     }
     .header {
       text-align: center;
@@ -94,14 +116,33 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       margin-bottom: 15px;
     }
     .global-controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
       gap: 15px;
-      margin-bottom: 20px;
-      padding: 15px;
-      background: rgba(102, 126, 234, 0.05);
-      border-radius: 8px;
-      border: 1px solid rgba(102, 126, 234, 0.1);
+      align-items: center;
+    }
+    .control-input {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: white;
+      font-size: 14px;
+      width: 80px;
+      text-align: center;
+    }
+    .control-input::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    .control-input:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .control-label {
+      font-size: 12px;
+      font-weight: 500;
+      opacity: 0.9;
+      margin-right: 8px;
     }
     label {
       display: block;
@@ -179,65 +220,48 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
     .btn-sm:hover {
       transform: scale(1.05);
     }
-    .totals {
-      padding: 16px;
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-      border-radius: 12px;
-      border: 1px solid rgba(102, 126, 234, 0.1);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      margin-bottom: 20px;
-    }
-    .totals-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      font-size: 14px;
-    }
-    .grand-total {
-      font-weight: bold;
-      font-size: 16px;
-      border-top: 2px solid #667eea;
-      padding-top: 8px;
-      color: #2d3748;
-    }
     .actions {
       display: flex;
-      flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
-    .actions button {
-      margin: 0;
-      padding: 12px 20px;
-      font-size: 14px;
+    .action-btn {
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      cursor: pointer;
       transition: all 0.2s ease;
-      width: 100%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .actions button:hover {
+    .btn-save {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+    }
+    .btn-clear {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+    }
+    .action-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
     }
 
     /* Responsive design */
-    @media (max-width: 900px) {
-      .main-layout {
+    @media (max-width: 1200px) {
+      .top-stats-bar {
         grid-template-columns: 1fr;
-        gap: 20px;
+        gap: 15px;
+        text-align: center;
       }
-      .sidebar {
-        position: static;
-      }
-      .global-controls {
-        grid-template-columns: 1fr;
-      }
-      .actions {
-        flex-direction: row;
+      .stats-section {
         justify-content: center;
       }
-      .actions button {
-        width: auto;
-        min-width: 140px;
+      .global-controls {
+        justify-content: center;
+      }
+      .actions {
+        justify-content: center;
       }
     }
     .search-results {
@@ -283,50 +307,48 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       <p>Add items, set discounts & tax, then save</p>
     </div>
 
-    <div class="main-layout">
-      <div class="invoice-form">
-        <div class="global-controls">
-          <div class="form-group">
-            <label for="globalDiscount">Global Discount (%)</label>
-            <input type="number" id="globalDiscount" value="0" min="0" max="100" step="0.01" aria-label="Global discount percentage">
-          </div>
-          <div class="form-group">
-            <label for="globalTax">Global Tax (%)</label>
-            <input type="number" id="globalTax" value="18" min="0" max="100" step="0.01" aria-label="Global tax percentage">
-          </div>
+    <div class="top-stats-bar">
+      <div class="stats-section">
+        <div class="stat-item">
+          <div class="stat-label">Subtotal</div>
+          <div class="stat-value" id="subtotal">${currency_symbol}0.00</div>
         </div>
-
-        <div class="form-group">
-          <label>Invoice Lines</label>
-          <div id="lineItems"></div>
-          <button type="button" class="btn-primary" onclick="addLineItem()" aria-label="Add new invoice line item">+ Add Item</button>
+        <div class="stat-item">
+          <div class="stat-label">Discount</div>
+          <div class="stat-value" id="discountAmount">${currency_symbol}0.00</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Tax</div>
+          <div class="stat-value" id="taxAmount">${currency_symbol}0.00</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Grand Total</div>
+          <div class="stat-value" id="grandTotal">${currency_symbol}0.00</div>
         </div>
       </div>
 
-      <div class="sidebar">
-        <div class="totals" id="totals">
-          <div class="totals-row">
-            <span>Subtotal:</span>
-            <span id="subtotal">${currency_symbol}0.00</span>
-          </div>
-          <div class="totals-row">
-            <span>Discount:</span>
-            <span id="discountAmount">${currency_symbol}0.00</span>
-          </div>
-          <div class="totals-row">
-            <span>Tax:</span>
-            <span id="taxAmount">${currency_symbol}0.00</span>
-          </div>
-          <div class="totals-row grand-total">
-            <span>Grand Total:</span>
-            <span id="grandTotal">${currency_symbol}0.00</span>
-          </div>
+      <div class="global-controls">
+        <div>
+          <span class="control-label">Discount:</span>
+          <input type="number" id="globalDiscount" class="control-input" value="0" min="0" max="100" step="0.01" placeholder="0%" aria-label="Global discount percentage">
         </div>
+        <div>
+          <span class="control-label">Tax:</span>
+          <input type="number" id="globalTax" class="control-input" value="18" min="0" max="100" step="0.01" placeholder="18%" aria-label="Global tax percentage">
+        </div>
+      </div>
 
-        <div class="actions">
-          <button type="button" class="btn-success" onclick="saveInvoice()" aria-label="Save invoice and send to application">💾 Save Invoice</button>
-          <button type="button" class="btn-danger" onclick="clearAll()" aria-label="Clear all invoice data">🗑️ Clear All</button>
-        </div>
+      <div class="actions">
+        <button type="button" class="action-btn btn-save" onclick="saveInvoice()" aria-label="Save invoice and send to application">💾 Save</button>
+        <button type="button" class="action-btn btn-clear" onclick="clearAll()" aria-label="Clear all invoice data">🗑️ Clear</button>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="form-group">
+        <label>Invoice Lines</label>
+        <div id="lineItems"></div>
+        <button type="button" class="btn-primary" onclick="addLineItem()" aria-label="Add new invoice line item">+ Add Item</button>
       </div>
     </div>
   </div>
