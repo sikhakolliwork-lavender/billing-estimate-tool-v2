@@ -767,7 +767,7 @@ def settings_page():
 
         with st.form("email_settings_form"):
             smtp_server = st.text_input("SMTP Server", value=settings.smtp_server, placeholder="smtp.gmail.com")
-            smtp_port = st.number_input("SMTP Port", value=settings.smtp_port, min_value=1, max_value=65535, value=587)
+            smtp_port = st.number_input("SMTP Port", value=settings.smtp_port, min_value=1, max_value=65535)
             smtp_username = st.text_input("SMTP Username", value=settings.smtp_username, placeholder="your-email@gmail.com")
             smtp_password = st.text_input("SMTP Password", value=settings.smtp_password, type="password", placeholder="Your app password")
 
