@@ -49,14 +49,27 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       min-height: 100vh;
     }
     .container {
-      max-width: 900px;
+      max-width: 1200px;
       margin: 0 auto;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(10px);
-      padding: 30px;
+      padding: 25px;
       border-radius: 16px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.1);
       border: 1px solid rgba(255,255,255,0.2);
+    }
+    .main-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 25px;
+      align-items: start;
+    }
+    .invoice-form {
+      min-height: 400px;
+    }
+    .sidebar {
+      position: sticky;
+      top: 20px;
     }
     .header {
       text-align: center;
@@ -79,6 +92,16 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
     }
     .form-group {
       margin-bottom: 15px;
+    }
+    .global-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: rgba(102, 126, 234, 0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(102, 126, 234, 0.1);
     }
     label {
       display: block;
@@ -157,43 +180,65 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       transform: scale(1.05);
     }
     .totals {
-      margin-top: 25px;
-      padding: 20px;
+      padding: 16px;
       background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
       border-radius: 12px;
       border: 1px solid rgba(102, 126, 234, 0.1);
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
     }
     .totals-row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      font-size: 14px;
     }
     .grand-total {
       font-weight: bold;
-      font-size: 18px;
+      font-size: 16px;
       border-top: 2px solid #667eea;
-      padding-top: 12px;
+      padding-top: 8px;
       color: #2d3748;
     }
     .actions {
-      margin-top: 30px;
-      text-align: center;
       display: flex;
-      gap: 15px;
-      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
     }
     .actions button {
       margin: 0;
-      padding: 12px 24px;
-      font-size: 16px;
+      padding: 12px 20px;
+      font-size: 14px;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       transition: all 0.2s ease;
+      width: 100%;
     }
     .actions button:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+
+    /* Responsive design */
+    @media (max-width: 900px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+      .sidebar {
+        position: static;
+      }
+      .global-controls {
+        grid-template-columns: 1fr;
+      }
+      .actions {
+        flex-direction: row;
+        justify-content: center;
+      }
+      .actions button {
+        width: auto;
+        min-width: 140px;
+      }
     }
     .search-results {
       position: absolute;
@@ -238,44 +283,51 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       <p>Add items, set discounts & tax, then save</p>
     </div>
 
-    <div class="form-group">
-      <label for="globalDiscount">Global Discount (%)</label>
-      <input type="number" id="globalDiscount" value="0" min="0" max="100" step="0.01" aria-label="Global discount percentage">
-    </div>
+    <div class="main-layout">
+      <div class="invoice-form">
+        <div class="global-controls">
+          <div class="form-group">
+            <label for="globalDiscount">Global Discount (%)</label>
+            <input type="number" id="globalDiscount" value="0" min="0" max="100" step="0.01" aria-label="Global discount percentage">
+          </div>
+          <div class="form-group">
+            <label for="globalTax">Global Tax (%)</label>
+            <input type="number" id="globalTax" value="18" min="0" max="100" step="0.01" aria-label="Global tax percentage">
+          </div>
+        </div>
 
-    <div class="form-group">
-      <label for="globalTax">Global Tax (%)</label>
-      <input type="number" id="globalTax" value="18" min="0" max="100" step="0.01" aria-label="Global tax percentage">
-    </div>
+        <div class="form-group">
+          <label>Invoice Lines</label>
+          <div id="lineItems"></div>
+          <button type="button" class="btn-primary" onclick="addLineItem()" aria-label="Add new invoice line item">+ Add Item</button>
+        </div>
+      </div>
 
-    <div class="form-group">
-      <label>Invoice Lines</label>
-      <div id="lineItems"></div>
-      <button type="button" class="btn-primary" onclick="addLineItem()" aria-label="Add new invoice line item">+ Add Item</button>
-    </div>
+      <div class="sidebar">
+        <div class="totals" id="totals">
+          <div class="totals-row">
+            <span>Subtotal:</span>
+            <span id="subtotal">${currency_symbol}0.00</span>
+          </div>
+          <div class="totals-row">
+            <span>Discount:</span>
+            <span id="discountAmount">${currency_symbol}0.00</span>
+          </div>
+          <div class="totals-row">
+            <span>Tax:</span>
+            <span id="taxAmount">${currency_symbol}0.00</span>
+          </div>
+          <div class="totals-row grand-total">
+            <span>Grand Total:</span>
+            <span id="grandTotal">${currency_symbol}0.00</span>
+          </div>
+        </div>
 
-    <div class="totals" id="totals">
-      <div class="totals-row">
-        <span>Subtotal:</span>
-        <span id="subtotal">${currency_symbol}0.00</span>
+        <div class="actions">
+          <button type="button" class="btn-success" onclick="saveInvoice()" aria-label="Save invoice and send to application">💾 Save Invoice</button>
+          <button type="button" class="btn-danger" onclick="clearAll()" aria-label="Clear all invoice data">🗑️ Clear All</button>
+        </div>
       </div>
-      <div class="totals-row">
-        <span>Discount:</span>
-        <span id="discountAmount">${currency_symbol}0.00</span>
-      </div>
-      <div class="totals-row">
-        <span>Tax:</span>
-        <span id="taxAmount">${currency_symbol}0.00</span>
-      </div>
-      <div class="totals-row grand-total">
-        <span>Grand Total:</span>
-        <span id="grandTotal">${currency_symbol}0.00</span>
-      </div>
-    </div>
-
-    <div class="actions">
-      <button type="button" class="btn-success" onclick="saveInvoice()" aria-label="Save invoice and send to application">💾 Save Invoice</button>
-      <button type="button" class="btn-danger" onclick="clearAll()" aria-label="Clear all invoice data">🗑️ Clear All</button>
     </div>
   </div>
 
