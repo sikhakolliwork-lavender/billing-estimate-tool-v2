@@ -55,7 +55,7 @@ class PDFInvoiceGenerator:
         ))
 
         self.styles.add(ParagraphStyle(
-            name='Normal',
+            name='CustomNormal',
             parent=self.styles['Normal'],
             fontSize=10,
             spaceAfter=3,
@@ -146,7 +146,7 @@ class PDFInvoiceGenerator:
         if self.business_settings.business_address:
             address = Paragraph(
                 self.business_settings.business_address,
-                self.styles['Normal']
+                self.styles['CustomNormal']
             )
             elements.append(address)
 
@@ -160,7 +160,7 @@ class PDFInvoiceGenerator:
 
         if contact_info:
             contact_text = " | ".join(contact_info)
-            contact_para = Paragraph(contact_text, self.styles['Normal'])
+            contact_para = Paragraph(contact_text, self.styles['CustomNormal'])
             elements.append(contact_para)
 
         return elements
@@ -211,7 +211,7 @@ class PDFInvoiceGenerator:
             customer_lines.append(f"GSTIN: {invoice.customer_gstin}")
 
         customer_text = "<br/>".join(customer_lines)
-        customer_para = Paragraph(customer_text, self.styles['Normal'])
+        customer_para = Paragraph(customer_text, self.styles['CustomNormal'])
         elements.append(customer_para)
 
         return elements
@@ -314,7 +314,7 @@ class PDFInvoiceGenerator:
         if invoice.notes:
             notes_header = Paragraph("Notes:", self.styles['SectionHeader'])
             elements.append(notes_header)
-            notes_para = Paragraph(invoice.notes, self.styles['Normal'])
+            notes_para = Paragraph(invoice.notes, self.styles['CustomNormal'])
             elements.append(notes_para)
             elements.append(Spacer(1, 12))
 
@@ -323,7 +323,7 @@ class PDFInvoiceGenerator:
             terms_text = invoice.terms or self.business_settings.terms_and_conditions
             terms_header = Paragraph("Terms & Conditions:", self.styles['SectionHeader'])
             elements.append(terms_header)
-            terms_para = Paragraph(terms_text, self.styles['Normal'])
+            terms_para = Paragraph(terms_text, self.styles['CustomNormal'])
             elements.append(terms_para)
             elements.append(Spacer(1, 12))
 
@@ -331,7 +331,7 @@ class PDFInvoiceGenerator:
         if self.business_settings.notes_footer:
             footer_para = Paragraph(
                 self.business_settings.notes_footer,
-                self.styles['Normal']
+                self.styles['CustomNormal']
             )
             elements.append(footer_para)
 

@@ -181,19 +181,19 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
     </div>
 
     <div class="form-group">
-      <label>Global Discount (%)</label>
-      <input type="number" id="globalDiscount" value="0" min="0" max="100" step="0.01">
+      <label for="globalDiscount">Global Discount (%)</label>
+      <input type="number" id="globalDiscount" value="0" min="0" max="100" step="0.01" aria-label="Global discount percentage">
     </div>
 
     <div class="form-group">
-      <label>Global Tax (%)</label>
-      <input type="number" id="globalTax" value="18" min="0" max="100" step="0.01">
+      <label for="globalTax">Global Tax (%)</label>
+      <input type="number" id="globalTax" value="18" min="0" max="100" step="0.01" aria-label="Global tax percentage">
     </div>
 
     <div class="form-group">
       <label>Invoice Lines</label>
       <div id="lineItems"></div>
-      <button type="button" class="btn-primary" onclick="addLineItem()">+ Add Item</button>
+      <button type="button" class="btn-primary" onclick="addLineItem()" aria-label="Add new invoice line item">+ Add Item</button>
     </div>
 
     <div class="totals" id="totals">
@@ -216,8 +216,8 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
     </div>
 
     <div class="actions">
-      <button type="button" class="btn-success" onclick="saveInvoice()">💾 Save Invoice</button>
-      <button type="button" class="btn-danger" onclick="clearAll()">🗑️ Clear All</button>
+      <button type="button" class="btn-success" onclick="saveInvoice()" aria-label="Save invoice and send to application">💾 Save Invoice</button>
+      <button type="button" class="btn-danger" onclick="clearAll()" aria-label="Clear all invoice data">🗑️ Clear All</button>
     </div>
   </div>
 
@@ -234,14 +234,14 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       lineDiv.className = 'line-item';
       lineDiv.innerHTML = \`
         <div style="position: relative;">
-          <input type="text" id="item-\${index}" placeholder="Type item name or SKU..." onchange="updateLine(\${index}, 'item', this.value)" oninput="showInventorySearch(\${index}, this.value)" autocomplete="off">
-          <div id="search-results-\${index}" class="search-results" style="display: none;"></div>
+          <input type="text" id="item-\${index}" placeholder="Type item name or SKU..." onchange="updateLine(\${index}, 'item', this.value)" oninput="showInventorySearch(\${index}, this.value)" onkeydown="handleSearchKeydown(\${index}, event)" autocomplete="off" tabindex="\${(index * 5) + 1}" aria-label="Item search for line \${index + 1}" aria-expanded="false" aria-haspopup="listbox">
+          <div id="search-results-\${index}" class="search-results" role="listbox" aria-label="Search results" style="display: none;"></div>
         </div>
-        <input type="number" placeholder="Qty" min="0" step="0.01" onchange="updateLine(\${index}, 'quantity', parseFloat(this.value) || 0)">
-        <input type="number" placeholder="Rate" min="0" step="0.01" onchange="updateLine(\${index}, 'rate', parseFloat(this.value) || 0)">
-        <input type="number" placeholder="Disc %" min="0" max="100" step="0.01" onchange="updateLine(\${index}, 'discount', parseFloat(this.value) || 0)">
-        <input type="number" placeholder="Amount" readonly style="background: #f8f9fa;">
-        <button type="button" class="btn-danger" onclick="removeLine(\${index})">×</button>
+        <input type="number" placeholder="Qty" min="0" step="0.01" onchange="updateLine(\${index}, 'quantity', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 1, event)" tabindex="\${(index * 5) + 2}" aria-label="Quantity for line \${index + 1}">
+        <input type="number" placeholder="Rate" min="0" step="0.01" onchange="updateLine(\${index}, 'rate', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 2, event)" tabindex="\${(index * 5) + 3}" aria-label="Rate for line \${index + 1}">
+        <input type="number" placeholder="Disc %" min="0" max="100" step="0.01" onchange="updateLine(\${index}, 'discount', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 3, event)" tabindex="\${(index * 5) + 4}" aria-label="Discount percentage for line \${index + 1}">
+        <input type="number" placeholder="Amount" readonly style="background: #f8f9fa;" tabindex="-1" aria-label="Calculated amount for line \${index + 1}">
+        <button type="button" class="btn-danger" onclick="removeLine(\${index})" onkeydown="handleButtonKeydown(\${index}, event)" tabindex="\${(index * 5) + 5}" aria-label="Remove line item \${index + 1}">×</button>
       \`;
 
       container.appendChild(lineDiv);
@@ -356,9 +356,11 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
 
     function showInventorySearch(index, searchTerm) {
       const resultsDiv = document.getElementById(\`search-results-\${index}\`);
+      const inputElement = document.getElementById(\`item-\${index}\`);
 
       if (!searchTerm || searchTerm.length < 2) {
         resultsDiv.style.display = 'none';
+        inputElement.setAttribute('aria-expanded', 'false');
         return;
       }
 
@@ -371,12 +373,13 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
 
       if (filtered.length === 0) {
         resultsDiv.style.display = 'none';
+        inputElement.setAttribute('aria-expanded', 'false');
         return;
       }
 
       // Build results HTML
-      const resultsHTML = filtered.map(item => \`
-        <div class="search-item" onclick="selectInventoryItem(\${index}, \${JSON.stringify(item).replace(/"/g, '&quot;')})">
+      const resultsHTML = filtered.map((item, idx) => \`
+        <div class="search-item" onclick="selectInventoryItem(\${index}, \${JSON.stringify(item).replace(/"/g, '&quot;')})" role="option" aria-selected="false" tabindex="-1">
           <div class="search-item-name">\${item.name} (\${item.sku})</div>
           <div class="search-item-details">
             \${currencySymbol}\${item.price.toFixed(2)} • \${item.category} • Stock: \${item.stock_quantity}
@@ -386,6 +389,7 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
 
       resultsDiv.innerHTML = resultsHTML;
       resultsDiv.style.display = 'block';
+      inputElement.setAttribute('aria-expanded', 'true');
     }
 
     function selectInventoryItem(index, item) {
@@ -404,16 +408,104 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
 
       // Hide search results
       const resultsDiv = document.getElementById(\`search-results-\${index}\`);
+      const inputElement = document.getElementById(\`item-\${index}\`);
       resultsDiv.style.display = 'none';
+      inputElement.setAttribute('aria-expanded', 'false');
     }
 
     // Hide search results when clicking outside
     document.addEventListener('click', function(event) {
       if (!event.target.closest('.line-item')) {
         const searchResults = document.querySelectorAll('.search-results');
-        searchResults.forEach(div => div.style.display = 'none');
+        searchResults.forEach(div => {
+          div.style.display = 'none';
+          // Update aria-expanded for corresponding input
+          const index = div.id.replace('search-results-', '');
+          const inputElement = document.getElementById(\`item-\${index}\`);
+          if (inputElement) {
+            inputElement.setAttribute('aria-expanded', 'false');
+          }
+        });
       }
     });
+
+    let selectedSearchIndex = -1;
+
+    function handleSearchKeydown(index, event) {
+      const resultsDiv = document.getElementById(\`search-results-\${index}\`);
+      const results = resultsDiv.querySelectorAll('.search-item');
+
+      switch(event.key) {
+        case 'ArrowDown':
+          event.preventDefault();
+          if (results.length > 0) {
+            selectedSearchIndex = Math.min(selectedSearchIndex + 1, results.length - 1);
+            updateSearchSelection(results);
+          }
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          if (results.length > 0) {
+            selectedSearchIndex = Math.max(selectedSearchIndex - 1, -1);
+            updateSearchSelection(results);
+          }
+          break;
+        case 'Enter':
+          event.preventDefault();
+          if (selectedSearchIndex >= 0 && results[selectedSearchIndex]) {
+            results[selectedSearchIndex].click();
+          }
+          break;
+        case 'Escape':
+          resultsDiv.style.display = 'none';
+          selectedSearchIndex = -1;
+          document.getElementById(\`item-\${index}\`).setAttribute('aria-expanded', 'false');
+          break;
+        case 'Tab':
+          resultsDiv.style.display = 'none';
+          selectedSearchIndex = -1;
+          document.getElementById(\`item-\${index}\`).setAttribute('aria-expanded', 'false');
+          break;
+      }
+    }
+
+    function updateSearchSelection(results) {
+      results.forEach((result, i) => {
+        if (i === selectedSearchIndex) {
+          result.style.background = '#e3f2fd';
+          result.setAttribute('aria-selected', 'true');
+        } else {
+          result.style.background = '';
+          result.setAttribute('aria-selected', 'false');
+        }
+      });
+    }
+
+    function handleInputKeydown(lineIndex, fieldIndex, event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        // Move to next field or add new line
+        const nextTabIndex = (lineIndex * 5) + fieldIndex + 2;
+        const nextElement = document.querySelector(\`[tabindex="\${nextTabIndex}"]\`);
+        if (nextElement) {
+          nextElement.focus();
+        } else if (fieldIndex === 3) { // Last input field
+          addLineItem();
+          // Focus first field of new line
+          setTimeout(() => {
+            const newLineFirstInput = document.querySelector(\`[tabindex="\${(lineIndex + 1) * 5 + 1}"]\`);
+            if (newLineFirstInput) newLineFirstInput.focus();
+          }, 100);
+        }
+      }
+    }
+
+    function handleButtonKeydown(index, event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        removeLine(index);
+      }
+    }
 
     // Initialize with one empty line
     addLineItem();
