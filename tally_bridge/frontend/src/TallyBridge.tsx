@@ -42,22 +42,40 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
   <title>Tally Invoice UI</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      margin: 20px;
-      background: #f8f9fa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
     }
     .container {
-      max-width: 800px;
+      max-width: 900px;
       margin: 0 auto;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
     }
     .header {
       text-align: center;
       margin-bottom: 30px;
       color: #2c3e50;
+    }
+    .header h2 {
+      margin: 0 0 10px 0;
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p {
+      margin: 0;
+      color: #64748b;
+      font-size: 16px;
     }
     .form-group {
       margin-bottom: 15px;
@@ -70,22 +88,37 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
     }
     input, select {
       width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      padding: 10px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
       font-size: 14px;
       box-sizing: border-box;
+      transition: all 0.2s ease;
+      background: rgba(255,255,255,0.8);
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      background: rgba(255,255,255,1);
     }
     .line-item {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
-      gap: 10px;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto auto;
+      gap: 8px;
       align-items: center;
-      padding: 10px;
-      border: 1px solid #eee;
-      border-radius: 4px;
-      margin-bottom: 10px;
-      background: #fafafa;
+      padding: 15px;
+      border: 1px solid #e1e8ed;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafb 100%);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+    }
+    .line-item:hover {
+      border-color: #3498db;
+      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+      transform: translateY(-1px);
     }
     .line-item input {
       margin: 0;
@@ -113,11 +146,23 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
     .btn-primary:hover { background: #2980b9; }
     .btn-success:hover { background: #229954; }
     .btn-danger:hover { background: #c0392b; }
+    .btn-sm {
+      padding: 6px 10px;
+      font-size: 12px;
+      min-width: 32px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+    .btn-sm:hover {
+      transform: scale(1.05);
+    }
     .totals {
-      margin-top: 20px;
-      padding: 15px;
-      background: #ecf0f1;
-      border-radius: 4px;
+      margin-top: 25px;
+      padding: 20px;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(102, 126, 234, 0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     .totals-row {
       display: flex;
@@ -126,16 +171,29 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
     }
     .grand-total {
       font-weight: bold;
-      font-size: 16px;
-      border-top: 2px solid #bdc3c7;
-      padding-top: 8px;
+      font-size: 18px;
+      border-top: 2px solid #667eea;
+      padding-top: 12px;
+      color: #2d3748;
     }
     .actions {
-      margin-top: 20px;
+      margin-top: 30px;
       text-align: center;
+      display: flex;
+      gap: 15px;
+      justify-content: center;
     }
     .actions button {
-      margin: 0 10px;
+      margin: 0;
+      padding: 12px 24px;
+      font-size: 16px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: all 0.2s ease;
+    }
+    .actions button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
     }
     .search-results {
       position: absolute;
@@ -234,14 +292,15 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       lineDiv.className = 'line-item';
       lineDiv.innerHTML = \`
         <div style="position: relative;">
-          <input type="text" id="item-\${index}" placeholder="Type item name or SKU..." onchange="updateLine(\${index}, 'item', this.value)" oninput="showInventorySearch(\${index}, this.value)" onkeydown="handleSearchKeydown(\${index}, event)" autocomplete="off" tabindex="\${(index * 5) + 1}" aria-label="Item search for line \${index + 1}" aria-expanded="false" aria-haspopup="listbox">
+          <input type="text" id="item-\${index}" placeholder="Type item name or SKU..." onchange="updateLine(\${index}, 'item', this.value)" oninput="showInventorySearch(\${index}, this.value)" onkeydown="handleSearchKeydown(\${index}, event)" autocomplete="off" tabindex="\${(index * 6) + 1}" aria-label="Item search for line \${index + 1}" aria-expanded="false" aria-haspopup="listbox">
           <div id="search-results-\${index}" class="search-results" role="listbox" aria-label="Search results" style="display: none;"></div>
         </div>
-        <input type="number" placeholder="Qty" min="0" step="0.01" onchange="updateLine(\${index}, 'quantity', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 1, event)" tabindex="\${(index * 5) + 2}" aria-label="Quantity for line \${index + 1}">
-        <input type="number" placeholder="Rate" min="0" step="0.01" onchange="updateLine(\${index}, 'rate', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 2, event)" tabindex="\${(index * 5) + 3}" aria-label="Rate for line \${index + 1}">
-        <input type="number" placeholder="Disc %" min="0" max="100" step="0.01" onchange="updateLine(\${index}, 'discount', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 3, event)" tabindex="\${(index * 5) + 4}" aria-label="Discount percentage for line \${index + 1}">
+        <input type="number" placeholder="Qty" min="0" step="0.01" onchange="updateLine(\${index}, 'quantity', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 1, event)" tabindex="\${(index * 6) + 2}" aria-label="Quantity for line \${index + 1}">
+        <input type="number" placeholder="Rate" min="0" step="0.01" onchange="updateLine(\${index}, 'rate', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 2, event)" tabindex="\${(index * 6) + 3}" aria-label="Rate for line \${index + 1}">
+        <input type="number" placeholder="Disc %" min="0" max="100" step="0.01" onchange="updateLine(\${index}, 'discount', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 3, event)" tabindex="\${(index * 6) + 4}" aria-label="Discount percentage for line \${index + 1}">
         <input type="number" placeholder="Amount" readonly style="background: #f8f9fa;" tabindex="-1" aria-label="Calculated amount for line \${index + 1}">
-        <button type="button" class="btn-danger" onclick="removeLine(\${index})" onkeydown="handleButtonKeydown(\${index}, event)" tabindex="\${(index * 5) + 5}" aria-label="Remove line item \${index + 1}">×</button>
+        <button type="button" class="btn-primary btn-sm" onclick="addLineItem()" onkeydown="handleAddButtonKeydown(\${index}, event)" tabindex="\${(index * 6) + 5}" aria-label="Add new line item after line \${index + 1}">+</button>
+        <button type="button" class="btn-danger btn-sm" onclick="removeLine(\${index})" onkeydown="handleRemoveButtonKeydown(\${index}, event)" tabindex="\${(index * 6) + 6}" aria-label="Remove line item \${index + 1}">×</button>
       \`;
 
       container.appendChild(lineDiv);
@@ -484,23 +543,31 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
     function handleInputKeydown(lineIndex, fieldIndex, event) {
       if (event.key === 'Enter') {
         event.preventDefault();
-        // Move to next field or add new line
-        const nextTabIndex = (lineIndex * 5) + fieldIndex + 2;
+        // Move to next field or next action
+        const nextTabIndex = (lineIndex * 6) + fieldIndex + 2;
         const nextElement = document.querySelector(\`[tabindex="\${nextTabIndex}"]\`);
         if (nextElement) {
           nextElement.focus();
-        } else if (fieldIndex === 3) { // Last input field
-          addLineItem();
-          // Focus first field of new line
-          setTimeout(() => {
-            const newLineFirstInput = document.querySelector(\`[tabindex="\${(lineIndex + 1) * 5 + 1}"]\`);
-            if (newLineFirstInput) newLineFirstInput.focus();
-          }, 100);
+        } else if (fieldIndex === 3) { // Last input field, move to Add button
+          const addButton = document.querySelector(\`[tabindex="\${(lineIndex * 6) + 5}"]\`);
+          if (addButton) addButton.focus();
         }
       }
     }
 
-    function handleButtonKeydown(index, event) {
+    function handleAddButtonKeydown(index, event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        addLineItem();
+        // Focus first field of new line
+        setTimeout(() => {
+          const newLineFirstInput = document.querySelector(\`[tabindex="\${(currentLines.length - 1) * 6 + 1}"]\`);
+          if (newLineFirstInput) newLineFirstInput.focus();
+        }, 100);
+      }
+    }
+
+    function handleRemoveButtonKeydown(index, event) {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         removeLine(index);
