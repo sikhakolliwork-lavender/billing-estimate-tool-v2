@@ -13,7 +13,7 @@ from email import encoders
 from pathlib import Path
 from typing import List, Optional
 
-from ..models.models import BusinessSettings, Invoice
+from src.models.models import BusinessSettings, Invoice
 
 
 class EmailSender:

@@ -16,7 +16,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
 
-from ..models.models import Invoice, BusinessSettings
+from src.models.models import Invoice, BusinessSettings
 
 
 class PDFInvoiceGenerator:
