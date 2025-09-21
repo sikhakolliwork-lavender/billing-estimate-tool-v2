@@ -1,7 +1,7 @@
 """
-PDF Invoice Generation Utility
+PDF Estimate Generation Utility
 
-This module handles the generation of professional PDF invoices using ReportLab.
+This module handles the generation of professional PDF estimates using ReportLab.
 """
 
 import os
@@ -15,25 +15,67 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
-from src.models.models import Invoice, BusinessSettings
+from src.models.models import Estimate, BusinessSettings
 
 
-class PDFInvoiceGenerator:
+class PDFEstimateGenerator:
     def __init__(self, business_settings: BusinessSettings):
         self.business_settings = business_settings
         self.styles = getSampleStyleSheet()
+        self._setup_unicode_fonts()
         self._create_custom_styles()
 
+    def _setup_unicode_fonts(self):
+        """Setup Unicode font support for currency symbols"""
+        try:
+            # Try multiple font paths for better compatibility
+            font_paths = [
+                '/System/Library/Fonts/Arial Unicode MS.ttf',
+                '/System/Library/Fonts/Arial.ttf',
+                '/Library/Fonts/Arial.ttf',
+                '/System/Library/Fonts/DejaVuSans.ttf'
+            ]
+
+            for font_path in font_paths:
+                try:
+                    pdfmetrics.registerFont(TTFont('UnicodeFont', font_path))
+                    self.unicode_font = 'UnicodeFont'
+                    break
+                except:
+                    continue
+            else:
+                # If no Unicode font found, use Helvetica
+                self.unicode_font = 'Helvetica'
+        except:
+            # Fall back to Helvetica
+            self.unicode_font = 'Helvetica'
+
+    def _format_currency(self, amount: float) -> str:
+        """Format currency amount with proper symbol encoding"""
+        symbol = self.business_settings.currency_symbol
+        if symbol == '₹':
+            # For ₹ symbol, ensure proper encoding
+            if self.unicode_font == 'UnicodeFont':
+                return f"₹{amount:,.2f}"
+            else:
+                # Fallback to Rs. if Unicode not available
+                return f"Rs.{amount:,.2f}"
+        else:
+            return f"{symbol}{amount:,.2f}"
+
     def _create_custom_styles(self):
-        """Create custom paragraph styles for the invoice"""
+        """Create custom paragraph styles for the estimate"""
         self.styles.add(ParagraphStyle(
-            name='InvoiceTitle',
+            name='EstimateTitle',
             parent=self.styles['Heading1'],
             fontSize=24,
             spaceAfter=30,
             alignment=TA_CENTER,
-            textColor=colors.darkblue
+            textColor=colors.darkblue,
+            fontName=self.unicode_font
         ))
 
         self.styles.add(ParagraphStyle(
@@ -69,12 +111,12 @@ class PDFInvoiceGenerator:
             alignment=TA_RIGHT
         ))
 
-    def generate_invoice_pdf(self, invoice: Invoice, output_path: str = None) -> str:
+    def generate_estimate_pdf(self, estimate: Estimate, output_path: str = None) -> str:
         """
-        Generate a PDF invoice and return the file path
+        Generate a PDF estimate and return the file path
 
         Args:
-            invoice: Invoice object containing all invoice data
+            estimate: Estimate object containing all estimate data
             output_path: Optional custom output path
 
         Returns:
@@ -82,12 +124,12 @@ class PDFInvoiceGenerator:
         """
         if not output_path:
             # Create exports directory if it doesn't exist
-            exports_dir = Path("data/exports/invoices")
+            exports_dir = Path("data/exports/estimates")
             exports_dir.mkdir(parents=True, exist_ok=True)
 
             # Generate filename with timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"invoice_{timestamp}.pdf"
+            filename = f"estimate_{timestamp}.pdf"
             output_path = exports_dir / filename
 
         # Create PDF document
@@ -107,24 +149,24 @@ class PDFInvoiceGenerator:
         story.extend(self._build_header())
         story.append(Spacer(1, 20))
 
-        # Invoice title and details
-        story.extend(self._build_invoice_details(invoice))
+        # Estimate title and details
+        story.extend(self._build_estimate_details(estimate))
         story.append(Spacer(1, 20))
 
         # Customer details
-        story.extend(self._build_customer_details(invoice))
+        story.extend(self._build_customer_details(estimate))
         story.append(Spacer(1, 20))
 
-        # Invoice items table
-        story.extend(self._build_items_table(invoice))
+        # Estimate items table
+        story.extend(self._build_items_table(estimate))
         story.append(Spacer(1, 20))
 
         # Totals section
-        story.extend(self._build_totals_section(invoice))
+        story.extend(self._build_totals_section(estimate))
         story.append(Spacer(1, 20))
 
         # Footer with terms and notes
-        story.extend(self._build_footer(invoice))
+        story.extend(self._build_footer(estimate))
 
         # Build PDF
         doc.build(story)
@@ -165,20 +207,20 @@ class PDFInvoiceGenerator:
 
         return elements
 
-    def _build_invoice_details(self, invoice: Invoice):
-        """Build invoice number, date, and status section"""
+    def _build_estimate_details(self, estimate: Estimate):
+        """Build estimate number, date, and status section"""
         elements = []
 
-        # Invoice title
-        title = Paragraph("INVOICE", self.styles['InvoiceTitle'])
+        # Estimate title
+        title = Paragraph("ESTIMATE", self.styles['EstimateTitle'])
         elements.append(title)
 
-        # Create table for invoice details
+        # Create table for estimate details
         details_data = [
-            ['Invoice Number:', invoice.invoice_number],
-            ['Invoice Date:', invoice.date],
-            ['Due Date:', invoice.due_date or 'N/A'],
-            ['Status:', invoice.status.title()]
+            ['Estimate Number:', estimate.estimate_number],
+            ['Estimate Date:', estimate.date],
+            ['Due Date:', estimate.due_date or 'N/A'],
+            ['Status:', estimate.status.title()]
         ]
 
         details_table = Table(details_data, colWidths=[2*inch, 2*inch])
@@ -193,7 +235,7 @@ class PDFInvoiceGenerator:
         elements.append(details_table)
         return elements
 
-    def _build_customer_details(self, invoice: Invoice):
+    def _build_customer_details(self, estimate: Estimate):
         """Build customer information section"""
         elements = []
 
@@ -202,13 +244,13 @@ class PDFInvoiceGenerator:
         elements.append(header)
 
         # Customer details
-        customer_lines = [invoice.customer_name]
-        if invoice.customer_address:
-            customer_lines.append(invoice.customer_address)
-        if invoice.customer_email:
-            customer_lines.append(f"Email: {invoice.customer_email}")
-        if invoice.customer_gstin:
-            customer_lines.append(f"GSTIN: {invoice.customer_gstin}")
+        customer_lines = [estimate.customer_name]
+        if estimate.customer_address:
+            customer_lines.append(estimate.customer_address)
+        if estimate.customer_email:
+            customer_lines.append(f"Email: {estimate.customer_email}")
+        if estimate.customer_gstin:
+            customer_lines.append(f"GSTIN: {estimate.customer_gstin}")
 
         customer_text = "<br/>".join(customer_lines)
         customer_para = Paragraph(customer_text, self.styles['CustomNormal'])
@@ -216,7 +258,7 @@ class PDFInvoiceGenerator:
 
         return elements
 
-    def _build_items_table(self, invoice: Invoice):
+    def _build_items_table(self, estimate: Estimate):
         """Build the items table"""
         elements = []
 
@@ -225,13 +267,15 @@ class PDFInvoiceGenerator:
         table_data = [headers]
 
         # Add items
-        for item in invoice.items:
+        for item in estimate.items:
+            # Wrap long item names in Paragraph for text wrapping
+            item_name_para = Paragraph(item.name, self.styles['CustomNormal'])
             row = [
-                item.name,
+                item_name_para,
                 f"{item.quantity:,.2f}",
-                f"{self.business_settings.currency_symbol}{item.unit_price:,.2f}",
+                self._format_currency(item.unit_price),
                 f"{item.discount_rate:,.1f}%",
-                f"{self.business_settings.currency_symbol}{item.line_total:,.2f}"
+                self._format_currency(item.line_total)
             ]
             table_data.append(row)
 
@@ -244,15 +288,15 @@ class PDFInvoiceGenerator:
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('ALIGN', (0, 1), (0, -1), 'LEFT'),  # Description left-aligned
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 0), (-1, 0), self.unicode_font + '-Bold' if self.unicode_font == 'Helvetica' else self.unicode_font),
             ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTNAME', (0, 1), (-1, -1), self.unicode_font),
             ('FONTSIZE', (0, 1), (-1, -1), 9),
             ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
             ('TOPPADDING', (0, 1), (-1, -1), 6),
             ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ]
 
         # Alternate row colors
@@ -265,7 +309,7 @@ class PDFInvoiceGenerator:
 
         return elements
 
-    def _build_totals_section(self, invoice: Invoice):
+    def _build_totals_section(self, estimate: Estimate):
         """Build the totals section"""
         elements = []
 
@@ -273,29 +317,29 @@ class PDFInvoiceGenerator:
         totals_data = []
 
         # Subtotal
-        totals_data.append(['Subtotal:', f"{self.business_settings.currency_symbol}{invoice.subtotal:,.2f}"])
+        totals_data.append(['Subtotal:', self._format_currency(estimate.subtotal)])
 
         # Global discount if applicable
-        if invoice.global_discount_amount > 0:
+        if estimate.global_discount_amount > 0:
             totals_data.append([
-                f'Discount ({invoice.global_discount_rate:,.1f}%):',
-                f"-{self.business_settings.currency_symbol}{invoice.global_discount_amount:,.2f}"
+                f'Discount ({estimate.global_discount_rate:,.1f}%):',
+                f"-{self._format_currency(estimate.global_discount_amount)}"
             ])
 
         # Tax
-        if invoice.total_tax > 0:
-            totals_data.append(['Tax:', f"{self.business_settings.currency_symbol}{invoice.total_tax:,.2f}"])
+        if estimate.total_tax > 0:
+            totals_data.append(['Tax:', self._format_currency(estimate.total_tax)])
 
         # Grand total
-        totals_data.append(['Total:', f"{self.business_settings.currency_symbol}{invoice.grand_total:,.2f}"])
+        totals_data.append(['Total:', self._format_currency(estimate.grand_total)])
 
         # Create totals table
         totals_table = Table(totals_data, colWidths=[4*inch, 1.5*inch])
         totals_table.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'RIGHT'),
-            ('FONTNAME', (0, 0), (0, -2), 'Helvetica'),
-            ('FONTNAME', (1, 0), (1, -2), 'Helvetica'),
-            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 0), (0, -2), self.unicode_font),
+            ('FONTNAME', (1, 0), (1, -2), self.unicode_font),
+            ('FONTNAME', (0, -1), (-1, -1), self.unicode_font + '-Bold' if self.unicode_font == 'Helvetica' else self.unicode_font),
             ('FONTSIZE', (0, 0), (-1, -2), 10),
             ('FONTSIZE', (0, -1), (-1, -1), 12),
             ('TOPPADDING', (0, 0), (-1, -1), 6),
@@ -306,21 +350,21 @@ class PDFInvoiceGenerator:
         elements.append(totals_table)
         return elements
 
-    def _build_footer(self, invoice: Invoice):
+    def _build_footer(self, estimate: Estimate):
         """Build footer with terms and notes"""
         elements = []
 
         # Notes
-        if invoice.notes:
+        if estimate.notes:
             notes_header = Paragraph("Notes:", self.styles['SectionHeader'])
             elements.append(notes_header)
-            notes_para = Paragraph(invoice.notes, self.styles['CustomNormal'])
+            notes_para = Paragraph(estimate.notes, self.styles['CustomNormal'])
             elements.append(notes_para)
             elements.append(Spacer(1, 12))
 
         # Terms and conditions
-        if invoice.terms or self.business_settings.terms_and_conditions:
-            terms_text = invoice.terms or self.business_settings.terms_and_conditions
+        if estimate.terms or self.business_settings.terms_and_conditions:
+            terms_text = estimate.terms or self.business_settings.terms_and_conditions
             terms_header = Paragraph("Terms & Conditions:", self.styles['SectionHeader'])
             elements.append(terms_header)
             terms_para = Paragraph(terms_text, self.styles['CustomNormal'])

@@ -50,22 +50,38 @@ class DatabaseManager:
                     description TEXT,
                     price REAL NOT NULL DEFAULT 0.0,
                     tax_rate REAL NOT NULL DEFAULT 18.0,
+                    default_discount_rate REAL DEFAULT 0.0,
                     category TEXT,
                     unit TEXT DEFAULT 'nos',
                     stock_quantity INTEGER DEFAULT 0,
                     low_stock_alert INTEGER DEFAULT 10,
+
+                    -- Size information
+                    size_mm_length REAL,
+                    size_mm_width REAL,
+                    size_mm_height REAL,
+                    size_inches_length REAL,
+                    size_inches_width REAL,
+                    size_inches_height REAL,
+
+                    -- Additional specifications
+                    material TEXT DEFAULT '',
+                    finish TEXT DEFAULT '',
+                    color TEXT DEFAULT '',
+                    weight REAL,
+
                     is_active BOOLEAN DEFAULT 1,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
 
-            # Invoices table
+            # Estimates table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS invoices (
+                CREATE TABLE IF NOT EXISTS estimates (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    invoice_id TEXT UNIQUE NOT NULL,
-                    invoice_number TEXT UNIQUE NOT NULL,
+                    estimate_id TEXT UNIQUE NOT NULL,
+                    estimate_number TEXT UNIQUE NOT NULL,
                     customer_id INTEGER,
                     customer_name TEXT NOT NULL,
                     customer_email TEXT,
@@ -91,11 +107,11 @@ class DatabaseManager:
                 )
             """)
 
-            # Invoice items table
+            # Estimate items table
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS invoice_items (
+                CREATE TABLE IF NOT EXISTS estimate_items (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    invoice_id TEXT NOT NULL,
+                    estimate_id TEXT NOT NULL,
                     item_id INTEGER,
                     sku TEXT,
                     name TEXT NOT NULL,
@@ -106,7 +122,7 @@ class DatabaseManager:
                     tax_rate REAL DEFAULT 18.0,
                     line_total REAL NOT NULL DEFAULT 0.0,
 
-                    FOREIGN KEY (invoice_id) REFERENCES invoices (invoice_id),
+                    FOREIGN KEY (estimate_id) REFERENCES estimates (estimate_id),
                     FOREIGN KEY (item_id) REFERENCES inventory_items (id)
                 )
             """)
@@ -122,8 +138,8 @@ class DatabaseManager:
                     business_gstin TEXT,
                     business_logo_path TEXT,
 
-                    invoice_prefix TEXT DEFAULT 'INV',
-                    invoice_counter INTEGER DEFAULT 1,
+                    estimate_prefix TEXT DEFAULT 'INV',
+                    estimate_counter INTEGER DEFAULT 1,
                     currency_symbol TEXT DEFAULT '₹',
                     default_tax_rate REAL DEFAULT 18.0,
 
@@ -144,10 +160,10 @@ class DatabaseManager:
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_name ON customers (name)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_inventory_sku ON inventory_items (sku)")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_inventory_name ON inventory_items (name)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices (invoice_number)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_invoices_date ON invoices (date)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices (status)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice_id ON invoice_items (invoice_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_estimates_number ON estimates (estimate_number)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_estimates_date ON estimates (date)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_estimates_status ON estimates (status)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_estimate_items_estimate_id ON estimate_items (estimate_id)")
 
             # Insert default business settings if not exists
             cursor.execute("SELECT COUNT(*) FROM business_settings")
@@ -161,9 +177,46 @@ class DatabaseManager:
                     "Your Business Name",
                     "₹",
                     18.0,
-                    "Payment is due within 30 days from the date of invoice.",
+                    "Payment is due within 30 days from the date of estimate.",
                     "Thank you for your business!"
                 ))
+
+            conn.commit()
+
+        # Run migrations for any schema updates
+        self.run_migrations()
+
+    def run_migrations(self):
+        """Run database migrations to update schema"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Check if new columns exist in inventory_items table
+            cursor.execute("PRAGMA table_info(inventory_items)")
+            columns = [row[1] for row in cursor.fetchall()]
+
+            # Add new columns if they don't exist
+            new_columns = [
+                ('default_discount_rate', 'REAL DEFAULT 0.0'),
+                ('size_mm_length', 'REAL'),
+                ('size_mm_width', 'REAL'),
+                ('size_mm_height', 'REAL'),
+                ('size_inches_length', 'REAL'),
+                ('size_inches_width', 'REAL'),
+                ('size_inches_height', 'REAL'),
+                ('material', 'TEXT DEFAULT ""'),
+                ('finish', 'TEXT DEFAULT ""'),
+                ('color', 'TEXT DEFAULT ""'),
+                ('weight', 'REAL')
+            ]
+
+            for column_name, column_def in new_columns:
+                if column_name not in columns:
+                    try:
+                        cursor.execute(f"ALTER TABLE inventory_items ADD COLUMN {column_name} {column_def}")
+                        print(f"Added column {column_name} to inventory_items table")
+                    except sqlite3.Error as e:
+                        print(f"Error adding column {column_name}: {e}")
 
             conn.commit()
 

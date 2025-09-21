@@ -1,7 +1,7 @@
 """
 Email Sender Utility
 
-This module handles sending emails with invoice attachments using SMTP.
+This module handles sending emails with estimate attachments using SMTP.
 """
 
 import smtplib
@@ -13,26 +13,26 @@ from email import encoders
 from pathlib import Path
 from typing import List, Optional
 
-from src.models.models import BusinessSettings, Invoice
+from src.models.models import BusinessSettings, Estimate
 
 
 class EmailSender:
     def __init__(self, business_settings: BusinessSettings):
         self.business_settings = business_settings
 
-    def send_invoice_email(
+    def send_estimate_email(
         self,
-        invoice: Invoice,
+        estimate: Estimate,
         pdf_path: str,
         recipient_email: str = None,
         custom_subject: str = None,
         custom_message: str = None
     ) -> bool:
         """
-        Send invoice email with PDF attachment
+        Send estimate email with PDF attachment
 
         Args:
-            invoice: Invoice object
+            estimate: Estimate object
             pdf_path: Path to the PDF file
             recipient_email: Email address (uses customer email if not provided)
             custom_subject: Custom email subject
@@ -47,7 +47,7 @@ class EmailSender:
                 raise ValueError("Email settings are not properly configured")
 
             # Determine recipient
-            to_email = recipient_email or invoice.customer_email
+            to_email = recipient_email or estimate.customer_email
             if not to_email:
                 raise ValueError("No recipient email address provided")
 
@@ -55,10 +55,10 @@ class EmailSender:
             msg = MIMEMultipart()
             msg['From'] = self.business_settings.smtp_username
             msg['To'] = to_email
-            msg['Subject'] = custom_subject or self._generate_default_subject(invoice)
+            msg['Subject'] = custom_subject or self._generate_default_subject(estimate)
 
             # Email body
-            body = custom_message or self._generate_default_message(invoice)
+            body = custom_message or self._generate_default_message(estimate)
             msg.attach(MIMEText(body, 'plain'))
 
             # Attach PDF
@@ -100,24 +100,24 @@ class EmailSender:
         ]
         return all(field for field in required_fields)
 
-    def _generate_default_subject(self, invoice: Invoice) -> str:
+    def _generate_default_subject(self, estimate: Estimate) -> str:
         """Generate default email subject"""
-        return f"Invoice {invoice.invoice_number} from {self.business_settings.business_name}"
+        return f"Estimate {estimate.estimate_number} from {self.business_settings.business_name}"
 
-    def _generate_default_message(self, invoice: Invoice) -> str:
+    def _generate_default_message(self, estimate: Estimate) -> str:
         """Generate default email message"""
         currency = self.business_settings.currency_symbol
-        return f"""Dear {invoice.customer_name},
+        return f"""Dear {estimate.customer_name},
 
-Thank you for your business! Please find attached invoice {invoice.invoice_number} for your recent purchase.
+Thank you for your business! Please find attached estimate {estimate.estimate_number} for your recent purchase.
 
-Invoice Details:
-- Invoice Number: {invoice.invoice_number}
-- Invoice Date: {invoice.date}
-- Due Date: {invoice.due_date}
-- Amount: {currency}{invoice.grand_total:,.2f}
+Estimate Details:
+- Estimate Number: {estimate.estimate_number}
+- Estimate Date: {estimate.date}
+- Due Date: {estimate.due_date}
+- Amount: {currency}{estimate.grand_total:,.2f}
 
-Please remit payment by the due date. If you have any questions regarding this invoice, please don't hesitate to contact us.
+Please remit payment by the due date. If you have any questions regarding this estimate, please don't hesitate to contact us.
 
 Thank you for choosing {self.business_settings.business_name}!
 
@@ -155,7 +155,7 @@ Business Details:
 - Email: {self.business_settings.business_email}
 - Phone: {self.business_settings.business_phone}
 
-Test sent at: {invoice.created_at if 'invoice' in locals() else 'now'}
+Test sent at: {estimate.created_at if 'estimate' in locals() else 'now'}
 """
 
             msg.attach(MIMEText(body, 'plain'))

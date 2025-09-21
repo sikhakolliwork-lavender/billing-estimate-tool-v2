@@ -1,4 +1,5 @@
 export interface LineItem {
+  serial: number;
   item: string;
   quantity: number;
   rate: number;
@@ -6,7 +7,7 @@ export interface LineItem {
   amount: number;
 }
 
-export interface InvoicePayload {
+export interface EstimatePayload {
   lines: LineItem[];
   globalDiscount: number;
   globalTax: number;
@@ -14,8 +15,16 @@ export interface InvoicePayload {
 
 export interface InventoryItem {
   id: string;
+  sku: string;
   name: string;
+  description: string;
   price: number;
+  tax_rate: number;
+  default_discount_rate: number;
+  category: string;
+  unit: string;
+  stock_quantity: number;
+  display_text: string;
 }
 
 export interface TallyBridgeProps {

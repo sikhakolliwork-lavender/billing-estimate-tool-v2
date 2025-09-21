@@ -23,18 +23,74 @@ class InventoryItem:
     description: str = ""
     price: float = 0.0
     tax_rate: float = 18.0  # Default GST rate
+    default_discount_rate: float = 0.0  # Default discount percentage
     category: str = ""
     unit: str = "nos"  # pieces, kg, meters, etc.
     stock_quantity: int = 0
     low_stock_alert: int = 10
+
+    # Size information - both metric and imperial
+    size_mm_length: Optional[float] = None
+    size_mm_width: Optional[float] = None
+    size_mm_height: Optional[float] = None
+    size_inches_length: Optional[float] = None
+    size_inches_width: Optional[float] = None
+    size_inches_height: Optional[float] = None
+
+    # Additional specifications
+    material: str = ""
+    finish: str = ""
+    color: str = ""
+    weight: Optional[float] = None
+
     is_active: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
+    def get_display_text(self) -> str:
+        """Generate combined display text with all item details separated by |"""
+        parts = [self.name]
+
+        if self.description:
+            parts.append(self.description)
+
+        # Add size information if available
+        if self.size_mm_length and self.size_mm_width:
+            if self.size_mm_height:
+                size_mm = f"{self.size_mm_length}x{self.size_mm_width}x{self.size_mm_height}mm"
+            else:
+                size_mm = f"{self.size_mm_length}x{self.size_mm_width}mm"
+            parts.append(size_mm)
+
+        if self.size_inches_length and self.size_inches_width:
+            if self.size_inches_height:
+                size_inches = f"{self.size_inches_length}\"x{self.size_inches_width}\"x{self.size_inches_height}\""
+            else:
+                size_inches = f"{self.size_inches_length}\"x{self.size_inches_width}\""
+            parts.append(size_inches)
+
+        # Add material and finish
+        if self.material:
+            parts.append(self.material)
+        if self.finish:
+            parts.append(self.finish)
+        if self.color:
+            parts.append(self.color)
+
+        # Add weight if specified
+        if self.weight:
+            parts.append(f"{self.weight}kg")
+
+        # Add SKU
+        if self.sku:
+            parts.append(f"SKU: {self.sku}")
+
+        return " | ".join(parts)
+
 @dataclass
-class InvoiceItem:
+class EstimateItem:
     id: Optional[int] = None
-    invoice_id: str = ""
+    estimate_id: str = ""
     item_id: Optional[int] = None
     sku: str = ""
     name: str = ""
@@ -46,17 +102,17 @@ class InvoiceItem:
     line_total: float = 0.0
 
 @dataclass
-class Invoice:
+class Estimate:
     id: Optional[int] = None
-    invoice_id: str = ""
-    invoice_number: str = ""
+    estimate_id: str = ""
+    estimate_number: str = ""
     customer_id: Optional[int] = None
     customer_name: str = ""
     customer_email: str = ""
     customer_address: str = ""
     customer_gstin: str = ""
 
-    # Invoice details
+    # Estimate details
     date: str = ""
     due_date: str = ""
     notes: str = ""
@@ -70,18 +126,18 @@ class Invoice:
     grand_total: float = 0.0
 
     # Status and metadata
-    status: str = "draft"  # draft, sent, paid, cancelled
+    status: str = "draft"  # draft, sent, accepted, cancelled
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
     # Items (not stored in DB, loaded separately)
-    items: List[InvoiceItem] = None
+    items: List[EstimateItem] = None
 
     def __post_init__(self):
         if self.items is None:
             self.items = []
-        if not self.invoice_id:
-            self.invoice_id = str(uuid.uuid4())
+        if not self.estimate_id:
+            self.estimate_id = str(uuid.uuid4())
 
 @dataclass
 class BusinessSettings:
@@ -93,9 +149,9 @@ class BusinessSettings:
     business_gstin: str = ""
     business_logo_path: str = ""
 
-    # Invoice settings
-    invoice_prefix: str = "INV"
-    invoice_counter: int = 1
+    # Estimate settings
+    estimate_prefix: str = "INV"
+    estimate_counter: int = 1
     currency_symbol: str = "₹"
     default_tax_rate: float = 18.0
 

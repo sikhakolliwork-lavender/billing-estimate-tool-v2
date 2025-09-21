@@ -1,21 +1,28 @@
-# 🧾 Billing & Invoice Manager v2
+# 🧾 Billing & Estimate Manager v2
 
-A comprehensive, production-ready billing and invoice management system built with Streamlit, featuring a custom React component for invoice creation, SQLite database, PDF generation, and email functionality.
+A comprehensive, production-ready billing and estimate management system built with Streamlit, featuring a custom React component for estimate creation, SQLite database, PDF generation, and email functionality.
 
 ## ✨ Features
 
 ### 🏗️ Core Functionality
-- **Invoice Creation**: Interactive Tally-style invoice creation with real-time calculations
+- **Estimate Creation**: Interactive Tally-style estimate creation with real-time calculations and serial number tracking
 - **Customer Management**: Complete CRUD operations for customer data
 - **Inventory Management**: Full inventory system with stock tracking and low-stock alerts
-- **Business Settings**: Configurable business information, invoice settings, and email configuration
+- **Business Settings**: Configurable business information, estimate settings, and email configuration
 
 ### 🔧 Advanced Features
-- **PDF Generation**: Professional invoice PDFs with ReportLab
-- **Email Integration**: Send invoices via SMTP with PDF attachments
-- **Real-time Search**: Autocomplete inventory search in invoice creation
+- **PDF Generation**: Professional estimate PDFs with Unicode ₹ symbol support and proper text wrapping
+- **Email Integration**: Send estimates via SMTP with PDF attachments
+- **Real-time Search**: Autocomplete inventory search in estimate creation
 - **Analytics Dashboard**: Business insights with charts and metrics
 - **Database Management**: SQLite database with optimized queries and indexes
+
+### 🆕 Recent Improvements
+- **Serial Number Tracking**: Added serial numbers to line items for better tracking
+- **Enhanced PDF Formatting**: Fixed ₹ currency symbol display and improved table text wrapping
+- **Estimate Terminology**: Complete migration from "invoice" to "estimate" throughout the application
+- **Improved Amount Calculations**: Fixed field mapping issues for accurate real-time calculations
+- **Database Schema Updates**: Migrated database schema to support estimate-focused workflow
 
 ### 🎯 Production Ready
 - **Custom Streamlit Component**: React + TypeScript + Vite frontend with proper component integration
@@ -168,9 +175,9 @@ streamlit run demo_app.py
 ```python
 import tally_bridge
 
-# Basic usage
+# Basic usage for estimate creation
 result = tally_bridge.tally_bridge(
-    currency_symbol="$"
+    currency_symbol="₹"
 )
 
 if result:
@@ -178,8 +185,9 @@ if result:
     global_discount = result["globalDiscount"]
     global_tax = result["globalTax"]
 
-    # Process the invoice data
+    # Process the estimate data
     for line in lines:
+        serial = line["serial"]  # New: Serial number for tracking
         item = line["item"]
         quantity = line["quantity"]
         rate = line["rate"]
@@ -197,17 +205,18 @@ if result:
 
 ### Return Value
 
-When "Save Invoice" is clicked, returns a dict with:
+When "Save Estimate" is clicked, returns a dict with:
 
 ```python
 {
     "lines": [
         {
-            "item": "Widget A",
+            "serial": 1,
+            "item": "4K Monitor",
             "quantity": 2.0,
-            "rate": 10.50,
+            "rate": 35000.00,
             "discount": 5.0,
-            "amount": 19.95
+            "amount": 66500.00
         }
     ],
     "globalDiscount": 10.0,
@@ -215,7 +224,7 @@ When "Save Invoice" is clicked, returns a dict with:
 }
 ```
 
-Returns `None` when no invoice has been saved yet.
+Returns `None` when no estimate has been saved yet.
 
 ## 🔄 Data Flow
 
@@ -291,6 +300,39 @@ The component registers a single global message listener that:
 - Run `npm install` in frontend directory
 - Check Node.js version (requires 16+)
 - Verify all dependencies are installed
+
+## 📋 Changelog
+
+### v2.1.0 - Latest Updates (September 2024)
+
+**✨ New Features:**
+- Added serial number tracking for line items in estimates
+- Enhanced PDF generation with Unicode ₹ symbol support
+- Improved table text wrapping for long item descriptions
+- Complete migration from "invoice" to "estimate" terminology
+
+**🐛 Bug Fixes:**
+- Fixed currency symbol (₹) display issues in PDF generation
+- Resolved amount calculation field mapping problems
+- Fixed table formatting and layout issues in PDFs
+- Corrected input field indexing after adding serial numbers
+
+**🔧 Technical Improvements:**
+- Database schema migration from invoice_prefix to estimate_prefix
+- Enhanced Unicode font support with multiple fallback options
+- Improved PDF table styling and formatting
+- Better error handling and validation
+
+**📊 Testing:**
+- Added comprehensive PDF generation tests
+- Created large estimate tests (10+ items)
+- Verified currency symbol display across different scenarios
+
+### v2.0.0 - Initial Release
+- Basic estimate creation and management
+- Customer and inventory management
+- PDF generation and email integration
+- Streamlit + React component architecture
 
 ## 📄 License
 

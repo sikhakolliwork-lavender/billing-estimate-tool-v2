@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Streamlit, withStreamlitConnection, ComponentProps } from 'streamlit-component-lib';
-import { InvoicePayload } from './types';
+import { EstimatePayload } from './types';
 
 const TallyBridge: React.FC<ComponentProps> = (props) => {
   const inventory = props.args?.inventory || [];
@@ -11,7 +11,7 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
     // Register message listener on mount
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'TALLY_SAVE') {
-        const payload: InvoicePayload = event.data.payload;
+        const payload: EstimatePayload = event.data.payload;
         // Send data back to Python via Streamlit
         Streamlit.setComponentValue(payload);
       }
@@ -39,7 +39,7 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Tally Invoice UI</title>
+  <title>Tally Estimate UI</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
@@ -49,7 +49,7 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       min-height: 100vh;
     }
     .container {
-      max-width: 1400px;
+      max-width: 1800px;
       margin: 0 auto;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(10px);
@@ -168,7 +168,7 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
     }
     .line-item {
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto auto;
+      grid-template-columns: 60px 2fr 1fr 1fr 1fr 1fr auto auto;
       gap: 8px;
       align-items: center;
       padding: 15px;
@@ -303,7 +303,7 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
 <body>
   <div class="container">
     <div class="header">
-      <h2>⚡ Tally-Style Invoice</h2>
+      <h2>⚡ Tally-Style Estimate</h2>
       <p>Add items, set discounts & tax, then save</p>
     </div>
 
@@ -339,16 +339,16 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       </div>
 
       <div class="actions">
-        <button type="button" class="action-btn btn-save" onclick="saveInvoice()" aria-label="Save invoice and send to application">💾 Save</button>
-        <button type="button" class="action-btn btn-clear" onclick="clearAll()" aria-label="Clear all invoice data">🗑️ Clear</button>
+        <button type="button" class="action-btn btn-save" onclick="saveEstimate()" aria-label="Save estimate and send to application">💾 Save</button>
+        <button type="button" class="action-btn btn-clear" onclick="clearAll()" aria-label="Clear all estimate data">🗑️ Clear</button>
       </div>
     </div>
 
     <div class="main-content">
       <div class="form-group">
-        <label>Invoice Lines</label>
+        <label>Estimate Lines</label>
         <div id="lineItems"></div>
-        <button type="button" class="btn-primary" onclick="addLineItem()" aria-label="Add new invoice line item">+ Add Item</button>
+        <button type="button" class="btn-primary" onclick="addLineItem()" aria-label="Add new estimate line item">+ Add Item</button>
       </div>
     </div>
   </div>
@@ -365,21 +365,23 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       const lineDiv = document.createElement('div');
       lineDiv.className = 'line-item';
       lineDiv.innerHTML = \`
+        <input type="text" id="serial-\${index}" placeholder="\${index + 1}" value="\${index + 1}" onchange="updateLine(\${index}, 'serial', this.value)" onkeydown="handleInputKeydown(\${index}, 0, event)" tabindex="\${(index * 7) + 1}" aria-label="Serial number for line \${index + 1}" style="text-align: center; font-weight: 600;">
         <div style="position: relative;">
-          <input type="text" id="item-\${index}" placeholder="Type item name or SKU..." onchange="updateLine(\${index}, 'item', this.value)" oninput="showInventorySearch(\${index}, this.value)" onkeydown="handleSearchKeydown(\${index}, event)" autocomplete="off" tabindex="\${(index * 6) + 1}" aria-label="Item search for line \${index + 1}" aria-expanded="false" aria-haspopup="listbox">
+          <input type="text" id="item-\${index}" placeholder="Type item name or SKU..." onchange="updateLine(\${index}, 'item', this.value)" oninput="showInventorySearch(\${index}, this.value)" onkeydown="handleSearchKeydown(\${index}, event)" autocomplete="off" tabindex="\${(index * 7) + 2}" aria-label="Item search for line \${index + 1}" aria-expanded="false" aria-haspopup="listbox">
           <div id="search-results-\${index}" class="search-results" role="listbox" aria-label="Search results" style="display: none;"></div>
         </div>
-        <input type="number" placeholder="Qty" min="0" step="0.01" onchange="updateLine(\${index}, 'quantity', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 1, event)" tabindex="\${(index * 6) + 2}" aria-label="Quantity for line \${index + 1}">
-        <input type="number" placeholder="Rate" min="0" step="0.01" onchange="updateLine(\${index}, 'rate', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 2, event)" tabindex="\${(index * 6) + 3}" aria-label="Rate for line \${index + 1}">
-        <input type="number" placeholder="Disc %" min="0" max="100" step="0.01" onchange="updateLine(\${index}, 'discount', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 3, event)" tabindex="\${(index * 6) + 4}" aria-label="Discount percentage for line \${index + 1}">
-        <input type="number" placeholder="Amount" readonly style="background: #f8f9fa;" tabindex="-1" aria-label="Calculated amount for line \${index + 1}">
-        <button type="button" class="btn-primary btn-sm" onclick="addLineItem()" onkeydown="handleAddButtonKeydown(\${index}, event)" tabindex="\${(index * 6) + 5}" aria-label="Add new line item after line \${index + 1}">+</button>
-        <button type="button" class="btn-danger btn-sm" onclick="removeLine(\${index})" onkeydown="handleRemoveButtonKeydown(\${index}, event)" tabindex="\${(index * 6) + 6}" aria-label="Remove line item \${index + 1}">×</button>
+        <input type="number" placeholder="Qty" min="0" step="0.01" onchange="updateLine(\${index}, 'quantity', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 2, event)" tabindex="\${(index * 7) + 3}" aria-label="Quantity for line \${index + 1}">
+        <input type="number" placeholder="Rate" min="0" step="0.01" onchange="updateLine(\${index}, 'rate', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 3, event)" tabindex="\${(index * 7) + 4}" aria-label="Rate for line \${index + 1}">
+        <input type="number" placeholder="Disc %" min="0" max="100" step="0.01" onchange="updateLine(\${index}, 'discount', parseFloat(this.value) || 0)" onkeydown="handleInputKeydown(\${index}, 4, event)" tabindex="\${(index * 7) + 5}" aria-label="Discount percentage for line \${index + 1}">
+        <input type="number" id="amount-\${index}" placeholder="Amount" readonly style="background: #f8f9fa;" tabindex="-1" aria-label="Calculated amount for line \${index + 1}">
+        <button type="button" class="btn-primary btn-sm" onclick="addLineItem()" onkeydown="handleAddButtonKeydown(\${index}, event)" tabindex="\${(index * 7) + 6}" aria-label="Add new line item after line \${index + 1}">+</button>
+        <button type="button" class="btn-danger btn-sm" onclick="removeLine(\${index})" onkeydown="handleRemoveButtonKeydown(\${index}, event)" tabindex="\${(index * 7) + 7}" aria-label="Remove line item \${index + 1}">×</button>
       \`;
 
       container.appendChild(lineDiv);
 
       currentLines.push({
+        serial: index + 1,
         item: '',
         quantity: 0,
         rate: 0,
@@ -401,9 +403,8 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
           const discountAmount = beforeDiscount * (line.discount / 100);
           line.amount = beforeDiscount - discountAmount;
 
-          // Update readonly amount field
-          const lineDiv = document.getElementById('lineItems').children[index];
-          const amountInput = lineDiv.querySelector('input[readonly]');
+          // Update readonly amount field using direct ID
+          const amountInput = document.getElementById('amount-' + index);
           if (amountInput) {
             amountInput.value = line.amount.toFixed(2);
           }
@@ -429,11 +430,12 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
         addLineItem();
         const lineDiv = container.children[i];
         const inputs = lineDiv.querySelectorAll('input');
-        inputs[0].value = line.item;
-        inputs[1].value = line.quantity;
-        inputs[2].value = line.rate;
-        inputs[3].value = line.discount;
-        inputs[4].value = line.amount.toFixed(2);
+        inputs[0].value = line.serial || (i + 1);
+        inputs[1].value = line.item;
+        inputs[2].value = line.quantity;
+        inputs[3].value = line.rate;
+        inputs[4].value = line.discount;
+        inputs[5].value = line.amount.toFixed(2);
         currentLines[i] = { ...line };
       });
     }
@@ -454,7 +456,7 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       document.getElementById('grandTotal').textContent = currencySymbol + grandTotal.toFixed(2);
     }
 
-    function saveInvoice() {
+    function saveEstimate() {
       if (currentLines.length === 0) {
         alert('Please add some items before saving');
         return;
@@ -472,7 +474,7 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
         payload: payload
       }, '*');
 
-      alert('Invoice saved! Check the Streamlit app for results.');
+      alert('Estimate saved! Check the Streamlit app for results.');
     }
 
     function clearAll() {
@@ -513,9 +515,9 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
       // Build results HTML
       const resultsHTML = filtered.map((item, idx) => \`
         <div class="search-item" onclick="selectInventoryItem(\${index}, \${JSON.stringify(item).replace(/"/g, '&quot;')})" role="option" aria-selected="false" tabindex="-1">
-          <div class="search-item-name">\${item.name} (\${item.sku})</div>
+          <div class="search-item-name">\${item.display_text}</div>
           <div class="search-item-details">
-            \${currencySymbol}\${item.price.toFixed(2)} • \${item.category} • Stock: \${item.stock_quantity}
+            \${currencySymbol}\${item.price.toFixed(2)} • Stock: \${item.stock_quantity}
           </div>
         </div>
       \`).join('');
@@ -526,18 +528,25 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
     }
 
     function selectInventoryItem(index, item) {
-      // Update the item name field
+      // Update the item name field with display text
       const itemInput = document.getElementById(\`item-\${index}\`);
-      itemInput.value = item.name;
+      itemInput.value = item.display_text;
 
       // Update the rate field with item price
       const lineDiv = document.getElementById('lineItems').children[index];
-      const rateInput = lineDiv.querySelectorAll('input')[2]; // Rate is the 3rd input
+      const rateInput = lineDiv.querySelectorAll('input')[3]; // Rate is the 4th input (after serial)
+      const discountInput = lineDiv.querySelectorAll('input')[4]; // Discount is the 5th input
+
       rateInput.value = item.price.toFixed(2);
+      discountInput.value = item.default_discount_rate.toFixed(1); // Set default discount
 
       // Update the data model
-      updateLine(index, 'item', item.name);
+      updateLine(index, 'item', item.display_text);
       updateLine(index, 'rate', item.price);
+      updateLine(index, 'discount', item.default_discount_rate);
+
+      // Recalculate the line amount
+      // calculateLineAmount(index); // Function removed, calculation handled in updateLine
 
       // Hide search results
       const resultsDiv = document.getElementById(\`search-results-\${index}\`);
@@ -664,7 +673,7 @@ const TallyBridge: React.FC<ComponentProps> = (props) => {
           border: '1px solid #ddd',
           borderRadius: '8px',
         }}
-        title="Tally Invoice UI"
+        title="Tally Estimate UI"
       />
     </div>
   );

@@ -10,8 +10,8 @@ from datetime import datetime
 # Add the src directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from models.models import BusinessSettings, Invoice, InvoiceItem
-from utils.pdf_generator import PDFInvoiceGenerator
+from models.models import BusinessSettings, Estimate, EstimateItem
+from utils.pdf_generator import PDFEstimateGenerator
 
 def test_pdf_generation():
     """Test PDF generation with sample data"""
@@ -23,21 +23,21 @@ def test_pdf_generation():
         business_phone="+1-555-123-4567",
         business_email="test@testcompany.com",
         business_gstin="22AAAAA0000A1Z5",
-        currency_symbol="$",
+        currency_symbol="₹",
         terms_and_conditions="Payment due within 30 days.",
         notes_footer="Thank you for your business!"
     )
 
-    # Create sample invoice items
+    # Create sample estimate items
     items = [
-        InvoiceItem(
+        EstimateItem(
             name="Test Product 1",
             quantity=2.0,
             unit_price=100.00,
             discount_rate=10.0,
             line_total=180.00
         ),
-        InvoiceItem(
+        EstimateItem(
             name="Test Service 1",
             quantity=1.0,
             unit_price=250.00,
@@ -46,9 +46,9 @@ def test_pdf_generation():
         )
     ]
 
-    # Create invoice
-    invoice = Invoice(
-        invoice_number="TEST-001",
+    # Create estimate
+    estimate = Estimate(
+        estimate_number="TEST-001",
         customer_name="Test Customer",
         customer_address="456 Customer St\nCustomer City, CC 67890",
         customer_email="customer@test.com",
@@ -61,15 +61,15 @@ def test_pdf_generation():
         global_discount_amount=21.50,
         total_tax=73.53,
         grand_total=482.03,
-        notes="This is a test invoice.",
+        notes="This is a test estimate.",
         terms="Payment due within 30 days.",
         status="draft"
     )
 
     # Generate PDF
     try:
-        pdf_generator = PDFInvoiceGenerator(business_settings)
-        pdf_path = pdf_generator.generate_invoice_pdf(invoice)
+        pdf_generator = PDFEstimateGenerator(business_settings)
+        pdf_path = pdf_generator.generate_estimate_pdf(estimate)
 
         print(f"✅ PDF generated successfully: {pdf_path}")
 

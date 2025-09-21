@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from typing import List, Optional, Dict, Any
 from src.database.database import db
-from src.models.models import Customer, InventoryItem, Invoice, InvoiceItem, BusinessSettings
+from src.models.models import Customer, InventoryItem, Estimate, EstimateItem, BusinessSettings
 
 class CustomerManager:
     @staticmethod
@@ -72,12 +72,17 @@ class InventoryManager:
         """Create a new inventory item and return the ID"""
         query = """
             INSERT INTO inventory_items
-            (sku, name, description, price, tax_rate, category, unit, stock_quantity, low_stock_alert, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (sku, name, description, price, tax_rate, default_discount_rate, category, unit,
+             stock_quantity, low_stock_alert, size_mm_length, size_mm_width, size_mm_height,
+             size_inches_length, size_inches_width, size_inches_height, material, finish, color, weight, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         return db.execute_insert(query, (
-            item.sku, item.name, item.description, item.price, item.tax_rate,
-            item.category, item.unit, item.stock_quantity, item.low_stock_alert, item.is_active
+            item.sku, item.name, item.description, item.price, item.tax_rate, item.default_discount_rate,
+            item.category, item.unit, item.stock_quantity, item.low_stock_alert,
+            item.size_mm_length, item.size_mm_width, item.size_mm_height,
+            item.size_inches_length, item.size_inches_width, item.size_inches_height,
+            item.material, item.finish, item.color, item.weight, item.is_active
         ))
 
     @staticmethod
@@ -159,76 +164,76 @@ class InventoryManager:
         rows = db.execute_query(query)
         return [InventoryItem(**db.row_to_dict(row)) for row in rows]
 
-class InvoiceManager:
+class EstimateManager:
     @staticmethod
-    def create_invoice(invoice: Invoice) -> str:
-        """Create a new invoice and return the invoice_id"""
-        # Insert invoice
+    def create_estimate(estimate: Estimate) -> str:
+        """Create a new estimate and return the estimate_id"""
+        # Insert estimate
         query = """
-            INSERT INTO invoices
-            (invoice_id, invoice_number, customer_id, customer_name, customer_email,
+            INSERT INTO estimates
+            (estimate_id, estimate_number, customer_id, customer_name, customer_email,
              customer_address, customer_gstin, date, due_date, notes, terms,
              subtotal, global_discount_rate, global_discount_amount, total_tax, grand_total, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         db.execute_insert(query, (
-            invoice.invoice_id, invoice.invoice_number, invoice.customer_id,
-            invoice.customer_name, invoice.customer_email, invoice.customer_address,
-            invoice.customer_gstin, invoice.date, invoice.due_date, invoice.notes,
-            invoice.terms, invoice.subtotal, invoice.global_discount_rate,
-            invoice.global_discount_amount, invoice.total_tax, invoice.grand_total, invoice.status
+            estimate.estimate_id, estimate.estimate_number, estimate.customer_id,
+            estimate.customer_name, estimate.customer_email, estimate.customer_address,
+            estimate.customer_gstin, estimate.date, estimate.due_date, estimate.notes,
+            estimate.terms, estimate.subtotal, estimate.global_discount_rate,
+            estimate.global_discount_amount, estimate.total_tax, estimate.grand_total, estimate.status
         ))
 
-        # Insert invoice items
-        if invoice.items:
+        # Insert estimate items
+        if estimate.items:
             item_query = """
-                INSERT INTO invoice_items
-                (invoice_id, item_id, sku, name, description, quantity, unit_price, discount_rate, tax_rate, line_total)
+                INSERT INTO estimate_items
+                (estimate_id, item_id, sku, name, description, quantity, unit_price, discount_rate, tax_rate, line_total)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
-            for item in invoice.items:
+            for item in estimate.items:
                 db.execute_insert(item_query, (
-                    invoice.invoice_id, item.item_id, item.sku, item.name,
+                    estimate.estimate_id, item.item_id, item.sku, item.name,
                     item.description, item.quantity, item.unit_price,
                     item.discount_rate, item.tax_rate, item.line_total
                 ))
 
-        return invoice.invoice_id
+        return estimate.estimate_id
 
     @staticmethod
-    def get_invoice(invoice_id: str) -> Optional[Invoice]:
-        """Get an invoice with its items"""
-        # Get invoice
-        query = "SELECT * FROM invoices WHERE invoice_id = ?"
-        rows = db.execute_query(query, (invoice_id,))
+    def get_estimate(estimate_id: str) -> Optional[Estimate]:
+        """Get an estimate with its items"""
+        # Get estimate
+        query = "SELECT * FROM estimates WHERE estimate_id = ?"
+        rows = db.execute_query(query, (estimate_id,))
         if not rows:
             return None
 
-        invoice_data = db.row_to_dict(rows[0])
-        invoice = Invoice(**invoice_data)
+        estimate_data = db.row_to_dict(rows[0])
+        estimate = Estimate(**estimate_data)
 
-        # Get invoice items
-        items_query = "SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY id"
-        item_rows = db.execute_query(items_query, (invoice_id,))
-        invoice.items = [InvoiceItem(**db.row_to_dict(row)) for row in item_rows]
+        # Get estimate items
+        items_query = "SELECT * FROM estimate_items WHERE estimate_id = ? ORDER BY id"
+        item_rows = db.execute_query(items_query, (estimate_id,))
+        estimate.items = [EstimateItem(**db.row_to_dict(row)) for row in item_rows]
 
-        return invoice
+        return estimate
 
     @staticmethod
-    def get_all_invoices(limit: int = 100) -> List[Invoice]:
-        """Get all invoices (without items for performance)"""
-        query = "SELECT * FROM invoices ORDER BY date DESC, created_at DESC LIMIT ?"
+    def get_all_estimates(limit: int = 100) -> List[Estimate]:
+        """Get all estimates (without items for performance)"""
+        query = "SELECT * FROM estimates ORDER BY date DESC, created_at DESC LIMIT ?"
         rows = db.execute_query(query, (limit,))
-        return [Invoice(**db.row_to_dict(row)) for row in rows]
+        return [Estimate(**db.row_to_dict(row)) for row in rows]
 
     @staticmethod
-    def search_invoices(search_term: str = "", status: str = "", limit: int = 100) -> List[Invoice]:
-        """Search invoices"""
+    def search_estimates(search_term: str = "", status: str = "", limit: int = 100) -> List[Estimate]:
+        """Search estimates"""
         conditions = []
         params = []
 
         if search_term:
-            conditions.append("(invoice_number LIKE ? OR customer_name LIKE ?)")
+            conditions.append("(estimate_number LIKE ? OR customer_name LIKE ?)")
             term = f"%{search_term}%"
             params.extend([term, term])
 
@@ -237,43 +242,43 @@ class InvoiceManager:
             params.append(status)
 
         where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
-        query = f"SELECT * FROM invoices {where_clause} ORDER BY date DESC, created_at DESC LIMIT ?"
+        query = f"SELECT * FROM estimates {where_clause} ORDER BY date DESC, created_at DESC LIMIT ?"
         params.append(limit)
 
         rows = db.execute_query(query, tuple(params))
-        return [Invoice(**db.row_to_dict(row)) for row in rows]
+        return [Estimate(**db.row_to_dict(row)) for row in rows]
 
     @staticmethod
-    def update_invoice(invoice: Invoice) -> bool:
-        """Update an existing invoice"""
-        # Update invoice
+    def update_estimate(estimate: Estimate) -> bool:
+        """Update an existing estimate"""
+        # Update estimate
         query = """
-            UPDATE invoices
+            UPDATE estimates
             SET customer_id=?, customer_name=?, customer_email=?, customer_address=?, customer_gstin=?,
                 date=?, due_date=?, notes=?, terms=?, subtotal=?, global_discount_rate=?,
                 global_discount_amount=?, total_tax=?, grand_total=?, status=?, updated_at=CURRENT_TIMESTAMP
-            WHERE invoice_id=?
+            WHERE estimate_id=?
         """
         affected = db.execute_update(query, (
-            invoice.customer_id, invoice.customer_name, invoice.customer_email,
-            invoice.customer_address, invoice.customer_gstin, invoice.date,
-            invoice.due_date, invoice.notes, invoice.terms, invoice.subtotal,
-            invoice.global_discount_rate, invoice.global_discount_amount,
-            invoice.total_tax, invoice.grand_total, invoice.status, invoice.invoice_id
+            estimate.customer_id, estimate.customer_name, estimate.customer_email,
+            estimate.customer_address, estimate.customer_gstin, estimate.date,
+            estimate.due_date, estimate.notes, estimate.terms, estimate.subtotal,
+            estimate.global_discount_rate, estimate.global_discount_amount,
+            estimate.total_tax, estimate.grand_total, estimate.status, estimate.estimate_id
         ))
 
         # Delete existing items and re-insert
-        db.execute_update("DELETE FROM invoice_items WHERE invoice_id = ?", (invoice.invoice_id,))
+        db.execute_update("DELETE FROM estimate_items WHERE estimate_id = ?", (estimate.estimate_id,))
 
-        if invoice.items:
+        if estimate.items:
             item_query = """
-                INSERT INTO invoice_items
-                (invoice_id, item_id, sku, name, description, quantity, unit_price, discount_rate, tax_rate, line_total)
+                INSERT INTO estimate_items
+                (estimate_id, item_id, sku, name, description, quantity, unit_price, discount_rate, tax_rate, line_total)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
-            for item in invoice.items:
+            for item in estimate.items:
                 db.execute_insert(item_query, (
-                    invoice.invoice_id, item.item_id, item.sku, item.name,
+                    estimate.estimate_id, item.item_id, item.sku, item.name,
                     item.description, item.quantity, item.unit_price,
                     item.discount_rate, item.tax_rate, item.line_total
                 ))
@@ -281,24 +286,24 @@ class InvoiceManager:
         return affected > 0
 
     @staticmethod
-    def delete_invoice(invoice_id: str) -> bool:
-        """Delete an invoice and its items"""
+    def delete_estimate(estimate_id: str) -> bool:
+        """Delete an estimate and its items"""
         # Delete items first (foreign key constraint)
-        db.execute_update("DELETE FROM invoice_items WHERE invoice_id = ?", (invoice_id,))
+        db.execute_update("DELETE FROM estimate_items WHERE estimate_id = ?", (estimate_id,))
 
-        # Delete invoice
-        affected = db.execute_update("DELETE FROM invoices WHERE invoice_id = ?", (invoice_id,))
+        # Delete estimate
+        affected = db.execute_update("DELETE FROM estimates WHERE estimate_id = ?", (estimate_id,))
         return affected > 0
 
     @staticmethod
-    def get_next_invoice_number() -> str:
-        """Get the next invoice number"""
+    def get_next_estimate_number() -> str:
+        """Get the next estimate number"""
         settings = SettingsManager.get_settings()
-        current_number = settings.invoice_counter
-        prefix = settings.invoice_prefix
+        current_number = settings.estimate_counter
+        prefix = settings.estimate_prefix
 
         # Update counter
-        SettingsManager.update_invoice_counter(current_number + 1)
+        SettingsManager.update_estimate_counter(current_number + 1)
 
         return f"{prefix}-{current_number:04d}"
 
@@ -318,7 +323,7 @@ class SettingsManager:
         query = """
             UPDATE business_settings
             SET business_name=?, business_address=?, business_phone=?, business_email=?, business_gstin=?,
-                business_logo_path=?, invoice_prefix=?, invoice_counter=?, currency_symbol=?, default_tax_rate=?,
+                business_logo_path=?, estimate_prefix=?, estimate_counter=?, currency_symbol=?, default_tax_rate=?,
                 smtp_server=?, smtp_port=?, smtp_username=?, smtp_password=?,
                 terms_and_conditions=?, notes_footer=?, updated_at=CURRENT_TIMESTAMP
             WHERE id = (SELECT id FROM business_settings ORDER BY id LIMIT 1)
@@ -326,7 +331,7 @@ class SettingsManager:
         affected = db.execute_update(query, (
             settings.business_name, settings.business_address, settings.business_phone,
             settings.business_email, settings.business_gstin, settings.business_logo_path,
-            settings.invoice_prefix, settings.invoice_counter, settings.currency_symbol,
+            settings.estimate_prefix, settings.estimate_counter, settings.currency_symbol,
             settings.default_tax_rate, settings.smtp_server, settings.smtp_port,
             settings.smtp_username, settings.smtp_password, settings.terms_and_conditions,
             settings.notes_footer
@@ -334,11 +339,11 @@ class SettingsManager:
         return affected > 0
 
     @staticmethod
-    def update_invoice_counter(counter: int) -> bool:
-        """Update just the invoice counter"""
+    def update_estimate_counter(counter: int) -> bool:
+        """Update just the estimate counter"""
         query = """
             UPDATE business_settings
-            SET invoice_counter=?, updated_at=CURRENT_TIMESTAMP
+            SET estimate_counter=?, updated_at=CURRENT_TIMESTAMP
             WHERE id = (SELECT id FROM business_settings ORDER BY id LIMIT 1)
         """
         affected = db.execute_update(query, (counter,))
