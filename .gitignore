@@ -22,7 +22,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Build outputs
-tally_bridge/frontend/dist/
+# tally_bridge/frontend/dist/ - COMMENTED OUT: need dist in production
 tally_bridge/frontend/build/
 
 # IDE
