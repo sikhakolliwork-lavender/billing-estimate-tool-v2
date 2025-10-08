@@ -5,9 +5,12 @@ This is the main Streamlit application that integrates the tally_bridge componen
 with our database system for inventory management, customer management, and estimate generation.
 """
 
+# IMPORTANT: Set Tally Bridge to production mode BEFORE any imports
+import os
+os.environ["TALLY_BRIDGE_RELEASE"] = "1"
+
 import streamlit as st
 import sys
-import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime, date
 
