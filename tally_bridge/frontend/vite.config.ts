@@ -5,16 +5,12 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    lib: {
-      entry: './src/main.tsx',
-      name: 'TallyBridge',
-      fileName: 'tally_bridge',
-      formats: ['umd']
-    },
+    // Regular app build for Streamlit component (not library mode)
     rollupOptions: {
-      external: [],
       output: {
-        globals: {}
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]'
       }
     }
   },
