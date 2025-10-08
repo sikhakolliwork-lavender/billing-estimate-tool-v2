@@ -10,6 +10,9 @@ import os
 from datetime import datetime
 from typing import Optional, Dict, Any
 
+# Set Tally Bridge to production mode for cloud deployment
+os.environ["TALLY_BRIDGE_RELEASE"] = "1"
+
 # Set up imports
 try:
     from src.utils.google_drive_storage import drive_persistent_manager
