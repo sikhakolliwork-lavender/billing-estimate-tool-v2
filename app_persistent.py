@@ -5,13 +5,13 @@ This version provides permanent data persistence using Google Drive API,
 maintaining data across sessions and deployments.
 """
 
-import streamlit as st
+# IMPORTANT: Set Tally Bridge to production mode BEFORE any imports
 import os
+os.environ["TALLY_BRIDGE_RELEASE"] = "1"
+
+import streamlit as st
 from datetime import datetime
 from typing import Optional, Dict, Any
-
-# Set Tally Bridge to production mode for cloud deployment
-os.environ["TALLY_BRIDGE_RELEASE"] = "1"
 
 # Set up imports
 try:
